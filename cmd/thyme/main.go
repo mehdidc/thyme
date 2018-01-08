@@ -90,7 +90,6 @@ func (c *TrackCmd) Execute(args []string) error {
 			panic(err)
 		}
 		f, err := os.Create(c.Out)
-		f.WriteString("[")
 		rows.Next()
 		err = rows.Scan(&value)
 		f.WriteString(value)
@@ -99,7 +98,6 @@ func (c *TrackCmd) Execute(args []string) error {
 			err = rows.Scan(&value)
 			f.WriteString(value)
 		}
-		f.WriteString("]")
 		rows.Close()
 	}
 
