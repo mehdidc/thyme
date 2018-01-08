@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/jessevdk/go-flags"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/sourcegraph/thyme"
+	"github.com/mehdidc/thyme"
 	"log"
 	"os"
 	"runtime"
@@ -65,8 +65,11 @@ func (c *TrackCmd) Execute(args []string) error {
 	if err != nil {
 		panic(err)
 	}
-
-	out, err := json.MarshalIndent(snap, "", "  ")
+	//snaps := []*thyme.Snapshot{snap}
+	//var stream thyme.Stream
+	//stream.Snapshots = snaps
+	//out, err := json.MarshalIndent(stream, "", "  ")
+	out, err := json.Marshal(snap)
 	if err != nil {
 		return err
 	}
@@ -82,7 +85,6 @@ func (c *TrackCmd) Execute(args []string) error {
 	if err != nil {
 		panic(err)
 	}
-
 	if c.Out != "" {
 		var value string
 		rows, err := db.Query("SELECT value FROM data")
@@ -90,14 +92,18 @@ func (c *TrackCmd) Execute(args []string) error {
 			panic(err)
 		}
 		f, err := os.Create(c.Out)
+		f.WriteString("{\n")
+		f.WriteString("\"Snapshots\" : [\n")
 		rows.Next()
 		err = rows.Scan(&value)
 		f.WriteString(value)
 		for rows.Next() {
-			f.WriteString(",\n")
+			f.WriteString(",")
 			err = rows.Scan(&value)
 			f.WriteString(value)
 		}
+		f.WriteString("]\n")
+		f.WriteString("}")
 		rows.Close()
 	}
 
@@ -141,6 +147,7 @@ func (c *ShowCmd) Execute(args []string) error {
 		case "list":
 			fallthrough
 		default:
+			fmt.Println(stream)
 			thyme.List(&stream)
 		}
 	}
