@@ -1,14 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/jessevdk/go-flags"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sourcegraph/thyme"
 	"log"
 	"os"
 	"runtime"
-
-	"github.com/jessevdk/go-flags"
-	"github.com/sourcegraph/thyme"
 )
 
 var CLI = flags.NewNamedParser("thyme", flags.PrintErrors|flags.PassDoubleDash)
@@ -59,13 +60,28 @@ func (c *TrackCmd) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-
 	if c.Out == "" {
 		out, err := json.MarshalIndent(snap, "", "  ")
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(out))
+		filename := os.Getenv("HOME") + "/.thyme/thyme.db"
+		db, err := sql.Open("sqlite3", filename)
+		if err != nil {
+			panic(err)
+		}
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS data(time TIMESTAMP PRIMARY KEY, value TEXT)")
+		if err != nil {
+			panic(err)
+		}
+		stmt, err := db.Prepare("INSERT INTO data(time, value) values(?,?)")
+		if err != nil {
+			panic(err)
+		}
+		_, err = stmt.Exec(snap.Time, out)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		var stream thyme.Stream
 		if _, err := os.Stat(c.Out); err == nil {
