@@ -60,55 +60,47 @@ func (c *TrackCmd) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	if c.Out == "" {
-		out, err := json.MarshalIndent(snap, "", "  ")
-		if err != nil {
-			return err
-		}
-		filename := os.Getenv("HOME") + "/.thyme/thyme.db"
-		db, err := sql.Open("sqlite3", filename)
+	filename := os.Getenv("HOME") + "/.thyme/thyme.db"
+	db, err := sql.Open("sqlite3", filename)
+	if err != nil {
+		panic(err)
+	}
+
+	out, err := json.MarshalIndent(snap, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS data(time TIMESTAMP PRIMARY KEY, value TEXT)")
+	if err != nil {
+		panic(err)
+	}
+	stmt, err := db.Prepare("INSERT INTO data(time, value) values(?,?)")
+	if err != nil {
+		panic(err)
+	}
+	_, err = stmt.Exec(snap.Time, out)
+	if err != nil {
+		panic(err)
+	}
+
+	if c.Out != "" {
+		var value string
+		rows, err := db.Query("SELECT value FROM data")
 		if err != nil {
 			panic(err)
 		}
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS data(time TIMESTAMP PRIMARY KEY, value TEXT)")
-		if err != nil {
-			panic(err)
-		}
-		stmt, err := db.Prepare("INSERT INTO data(time, value) values(?,?)")
-		if err != nil {
-			panic(err)
-		}
-		_, err = stmt.Exec(snap.Time, out)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		var stream thyme.Stream
-		if _, err := os.Stat(c.Out); err == nil {
-			if err := func() error {
-				f, err := os.Open(c.Out)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-				if err := json.NewDecoder(f).Decode(&stream); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else if !os.IsNotExist(err) {
-			return err
-		}
-		stream.Snapshots = append(stream.Snapshots, snap)
 		f, err := os.Create(c.Out)
-		if err != nil {
-			return err
+		f.WriteString("[")
+		rows.Next()
+		err = rows.Scan(&value)
+		f.WriteString(value)
+		for rows.Next() {
+			f.WriteString(",\n")
+			err = rows.Scan(&value)
+			f.WriteString(value)
 		}
-		if err := json.NewEncoder(f).Encode(stream); err != nil {
-			return err
-		}
+		f.WriteString("]")
+		rows.Close()
 	}
 
 	return nil
