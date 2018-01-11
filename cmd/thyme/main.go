@@ -54,13 +54,12 @@ var trackCmd TrackCmd
 func (c *TrackCmd) Execute(args []string) error {
 	t, err := getTracker()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	snap, err := t.Snap()
 	if err != nil {
-		panic(err)
+		return err
 	}
-
 	filename := os.Getenv("HOME") + "/.thyme/thyme.db"
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {

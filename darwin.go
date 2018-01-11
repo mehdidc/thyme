@@ -199,7 +199,8 @@ func parseASOutput(out string) (map[process][]*Window, error) {
 	for _, line := range strings.Split(out, "\n") {
 		if strings.HasPrefix(line, "PROCESS ") {
 			c := strings.Index(line, ":")
-			procID, err := strconv.ParseInt(line[len("PROCESS "):c], 10, 0)
+			procID_f, err := strconv.ParseFloat(line[len("PROCESS "):c], 64)
+			procID := int64(procID_f)
 			if err != nil {
 				return nil, err
 			}
@@ -224,7 +225,8 @@ func parseASOutput(out string) (map[process][]*Window, error) {
 func parseWindowLine(line string, procId int64) (string, int64) {
 	c := strings.Index(line, ":")
 	win := line[c+1:]
-	winID, err := strconv.ParseInt(line[len("WINDOW "):c], 10, 0)
+	winID_f, err := strconv.ParseFloat(line[len("WINDOW "):c], 64)
+	winID := int64(winID_f)
 	if err != nil {
 		// sometimes "missing value" appears here, so generate a value
 		// taking the process ID and the window index to generate a hash
