@@ -54,24 +54,21 @@ var trackCmd TrackCmd
 func (c *TrackCmd) Execute(args []string) error {
 	t, err := getTracker()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	snap, err := t.Snap()
 	if err != nil {
-		return err
+		panic(err)
 	}
+
 	filename := os.Getenv("HOME") + "/.thyme/thyme.db"
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		panic(err)
 	}
-	//snaps := []*thyme.Snapshot{snap}
-	//var stream thyme.Stream
-	//stream.Snapshots = snaps
-	//out, err := json.MarshalIndent(stream, "", "  ")
 	out, err := json.Marshal(snap)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS data(time TIMESTAMP PRIMARY KEY, value TEXT)")
 	if err != nil {
