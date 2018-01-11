@@ -73,15 +73,16 @@ func (c *TrackCmd) Execute(args []string) error {
 	if err != nil {
 		panic(err)
 	}
-	stmt, err := db.Prepare("INSERT INTO data(time, value) values(?,?)")
-	if err != nil {
-		panic(err)
-	}
-	_, err = stmt.Exec(snap.Time, out)
-	if err != nil {
-		panic(err)
-	}
-	if c.Out != "" {
+	if c.Out == "" {
+		stmt, err := db.Prepare("INSERT INTO data(time, value) values(?,?)")
+		if err != nil {
+			panic(err)
+		}
+		_, err = stmt.Exec(snap.Time, out)
+		if err != nil {
+			panic(err)
+		}
+	} else {
 		var value string
 		rows, err := db.Query("SELECT value FROM data")
 		if err != nil {
